@@ -21,12 +21,21 @@ camera.position.z = 5;
 
 window.addEventListener(
 	"resize",
-	() => {
-		camera.aspect = window.innerWidth / window.innerHeight;
-		camera.updateProjectionMatrix();
+	(() => {
+		const tanFOV = Math.tan(((Math.PI / 180) * camera.fov) / 2);
+		const windowHeight = window.innerHeight;
+		return () => {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.fov =
+				(360 / Math.PI) *
+				Math.atan(tanFOV * (window.innerHeight / windowHeight));
 
-		renderer.setSize(window.innerWidth, window.innerHeight);
-	},
+			camera.updateProjectionMatrix();
+			camera.lookAt(scene.position);
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		};
+	})(),
 	false
 );
 
