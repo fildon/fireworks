@@ -1,6 +1,6 @@
 {
 	"scripts": {
-		"build": "vite build --sourcemap",
+		"build": "vite build --sourcemap --base /fireworks",
 		"dev": "vite --open"
 	},
 	"prettier": {
