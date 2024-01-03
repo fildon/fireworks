@@ -1,9 +1,9 @@
 import {
+	Matrix4,
 	Mesh,
 	MeshBasicMaterial,
 	PerspectiveCamera,
 	Scene,
-	SphereGeometry,
 	TetrahedronGeometry,
 	WebGLRenderer,
 } from "three";
@@ -11,6 +11,11 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+
+/**
+ * Maximum age in milliseconds for an ember
+ */
+const MAX_AGE = 10000;
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(
@@ -22,11 +27,6 @@ const camera = new PerspectiveCamera(
 const renderer = new WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-
-const geometry = new SphereGeometry(1, 16, 8);
-const material = new MeshBasicMaterial({ color: 0xff7700 });
-const sphere = new Mesh(geometry, material);
-scene.add(sphere);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -58,11 +58,12 @@ type Ember = {
 	xVelocity: number;
 	yVelocity: number;
 	mesh: Mesh;
+	created: number;
 };
 let embers: Array<Ember> = [];
 
 window.addEventListener("click", () => {
-	Array.from({ length: 100 })
+	Array.from({ length: 128 })
 		.map(() => ({
 			angle: Math.random() * 2 * Math.PI,
 			radius: Math.random(),
@@ -76,6 +77,7 @@ window.addEventListener("click", () => {
 				xVelocity: radius * Math.sin(angle),
 				yVelocity: 0.5 + radius * Math.cos(angle),
 				mesh: ember,
+				created: performance.now(),
 			});
 			scene.add(ember);
 		});
@@ -93,24 +95,26 @@ const animate = (timestamp: number) => {
 	 * (0, 0, 0) is centered in the camera view
 	 */
 
-	sphere.rotation.x += 0.01;
-	sphere.rotation.y += 0.01;
+	// Remove embers after they pass their max age
+	embers
+		.filter((ember) => timestamp - ember.created > MAX_AGE)
+		.forEach((oldEmber) => scene.remove(oldEmber.mesh));
+	embers = embers.filter((ember) => timestamp - ember.created < MAX_AGE);
 
-	sphere.position.x = 10 * Math.sin(timestamp / 500);
-	sphere.position.y = 10 * Math.cos(timestamp / 500);
-
-	// Remove embers which have fallen below -1000
-	embers = embers.filter((ember) => ember.mesh.position.y > -1000);
 	embers.forEach((ember) => {
 		// TODO use the time delta for better interpolation
 		ember.mesh.position.x += ember.xVelocity;
 		ember.mesh.position.y += ember.yVelocity;
-		ember.xVelocity *= 0.98;
-		ember.yVelocity = ember.yVelocity * 0.98 - 0.01;
+		// Embers decay in size
+		ember.mesh.geometry.applyMatrix4(new Matrix4().makeScale(0.99, 0.99, 0.99));
+		ember.xVelocity *= 0.99;
+		ember.yVelocity = ember.yVelocity * 0.99 - 0.005;
 	});
 
 	composer.render();
 	requestAnimationFrame(animate);
 };
+
+// TODO colour transitions
 
 animate(performance.now());
