@@ -23,7 +23,7 @@ const material = new MeshBasicMaterial({ color: 0xff7700 });
 const sphere = new Mesh(geometry, material);
 scene.add(sphere);
 
-camera.position.z = 10;
+camera.position.z = 100;
 
 window.addEventListener(
 	"resize",
@@ -44,6 +44,30 @@ window.addEventListener(
 	})()
 );
 
+type Ember = {
+	xVelocity: number;
+	yVelocity: number;
+	mesh: Mesh;
+};
+let embers: Array<Ember> = [];
+
+window.addEventListener("click", () => {
+	for (let i = -1; i < 2; i++) {
+		for (let j = -1; j < 2; j++) {
+			const ember = new Mesh(
+				new SphereGeometry(1, 16, 8),
+				new MeshBasicMaterial({ color: 0xff7700 })
+			);
+			embers.push({
+				xVelocity: i,
+				yVelocity: j,
+				mesh: ember,
+			});
+			scene.add(ember);
+		}
+	}
+});
+
 /**
  * @param timestamp milliseconds since process started
  */
@@ -59,8 +83,18 @@ const animate = (timestamp: number) => {
 	sphere.rotation.x += 0.01;
 	sphere.rotation.y += 0.01;
 
-	sphere.position.x = Math.sin(timestamp / 500);
-	sphere.position.y = Math.cos(timestamp / 500);
+	sphere.position.x = 10 * Math.sin(timestamp / 500);
+	sphere.position.y = 10 * Math.cos(timestamp / 500);
+
+	// Remove embers which have fallen below -1000
+	embers = embers.filter((ember) => ember.mesh.position.y > -1000);
+	embers.forEach((ember) => {
+		// TODO use the time delta for better interpolation
+		ember.mesh.position.x += ember.xVelocity;
+		ember.mesh.position.y += ember.yVelocity;
+		ember.xVelocity *= 0.98;
+		ember.yVelocity = ember.yVelocity * 0.98 - 0.01;
+	});
 
 	renderer.render(scene, camera);
 	requestAnimationFrame(animate);
