@@ -4,6 +4,7 @@ import {
 	PerspectiveCamera,
 	Scene,
 	SphereGeometry,
+	TetrahedronGeometry,
 	WebGLRenderer,
 } from "three";
 
@@ -52,20 +53,23 @@ type Ember = {
 let embers: Array<Ember> = [];
 
 window.addEventListener("click", () => {
-	for (let i = -1; i < 2; i++) {
-		for (let j = -1; j < 2; j++) {
+	Array.from({ length: 100 })
+		.map(() => ({
+			angle: Math.random() * 2 * Math.PI,
+			radius: Math.random(),
+		}))
+		.forEach(({ angle, radius }) => {
 			const ember = new Mesh(
-				new SphereGeometry(1, 16, 8),
+				new TetrahedronGeometry(),
 				new MeshBasicMaterial({ color: 0xff7700 })
 			);
 			embers.push({
-				xVelocity: i,
-				yVelocity: j,
+				xVelocity: radius * Math.sin(angle),
+				yVelocity: 0.5 + radius * Math.cos(angle),
 				mesh: ember,
 			});
 			scene.add(ember);
-		}
-	}
+		});
 });
 
 /**
