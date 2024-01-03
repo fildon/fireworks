@@ -7,6 +7,10 @@ import {
 	TetrahedronGeometry,
 	WebGLRenderer,
 } from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(
@@ -23,6 +27,11 @@ const geometry = new SphereGeometry(1, 16, 8);
 const material = new MeshBasicMaterial({ color: 0xff7700 });
 const sphere = new Mesh(geometry, material);
 scene.add(sphere);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new BloomPass(5, 20, 2));
+composer.addPass(new OutputPass());
 
 camera.position.z = 100;
 
@@ -61,7 +70,7 @@ window.addEventListener("click", () => {
 		.forEach(({ angle, radius }) => {
 			const ember = new Mesh(
 				new TetrahedronGeometry(),
-				new MeshBasicMaterial({ color: 0xff7700 })
+				new MeshBasicMaterial({ color: 0xff2222 })
 			);
 			embers.push({
 				xVelocity: radius * Math.sin(angle),
@@ -100,7 +109,7 @@ const animate = (timestamp: number) => {
 		ember.yVelocity = ember.yVelocity * 0.98 - 0.01;
 	});
 
-	renderer.render(scene, camera);
+	composer.render();
 	requestAnimationFrame(animate);
 };
 
