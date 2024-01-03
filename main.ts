@@ -1,9 +1,9 @@
 import {
-	BoxGeometry,
 	Mesh,
 	MeshBasicMaterial,
 	PerspectiveCamera,
 	Scene,
+	SphereGeometry,
 	WebGLRenderer,
 } from "three";
 
@@ -11,19 +11,19 @@ const scene = new Scene();
 const camera = new PerspectiveCamera(
 	75,
 	window.innerWidth / window.innerHeight,
-	0.1,
+	1,
 	1000
 );
 const renderer = new WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const geometry = new BoxGeometry(1, 1, 1);
-const material = new MeshBasicMaterial({ color: 0x00ff00 });
-const cube = new Mesh(geometry, material);
-scene.add(cube);
+const geometry = new SphereGeometry(1, 16, 8);
+const material = new MeshBasicMaterial({ color: 0xff7700 });
+const sphere = new Mesh(geometry, material);
+scene.add(sphere);
 
-camera.position.z = 5;
+camera.position.z = 10;
 
 window.addEventListener(
 	"resize",
@@ -41,16 +41,29 @@ window.addEventListener(
 
 			renderer.setSize(window.innerWidth, window.innerHeight);
 		};
-	})(),
-	false
+	})()
 );
 
-const animate = () => {
-	cube.rotation.x += 0.01;
-	cube.rotation.y += 0.01;
+/**
+ * @param timestamp milliseconds since process started
+ */
+const animate = (timestamp: number) => {
+	/**
+	 * x is positive to the right
+	 * y is positive up the screen
+	 * z is positive towards the viewer
+	 * Convention of 1 on any axis representing 1 metre of distance.
+	 * (0, 0, 0) is centered in the camera view
+	 */
+
+	sphere.rotation.x += 0.01;
+	sphere.rotation.y += 0.01;
+
+	sphere.position.x = Math.sin(timestamp / 500);
+	sphere.position.y = Math.cos(timestamp / 500);
 
 	renderer.render(scene, camera);
 	requestAnimationFrame(animate);
 };
 
-animate();
+animate(performance.now());
