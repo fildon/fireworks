@@ -8,6 +8,7 @@ import {
 	Scene,
 	TetrahedronGeometry,
 	Vector2,
+	Vector3,
 	WebGLRenderer,
 } from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -58,8 +59,7 @@ window.addEventListener(
 );
 
 type Ember = {
-	xVelocity: number;
-	yVelocity: number;
+	velocity: Vector3;
 	mesh: Mesh;
 	created: number;
 };
@@ -86,11 +86,8 @@ window.addEventListener("click", (event) => {
 	);
 	const [{ point: intersection }] = raycaster.intersectObject(backdropPlane);
 	Array.from({ length: 128 })
-		.map(() => ({
-			angle: Math.random() * 2 * Math.PI,
-			radius: Math.random(),
-		}))
-		.forEach(({ angle, radius }) => {
+		.map(() => new Vector3().randomDirection().multiplyScalar(Math.random()))
+		.forEach((velocity) => {
 			const ember = new Mesh(
 				new TetrahedronGeometry(),
 				new MeshBasicMaterial({ color: 0xff2222 })
@@ -98,8 +95,7 @@ window.addEventListener("click", (event) => {
 			ember.position.x = intersection.x;
 			ember.position.y = intersection.y;
 			embers.push({
-				xVelocity: radius * Math.sin(angle),
-				yVelocity: 0.5 + radius * Math.cos(angle),
+				velocity,
 				mesh: ember,
 				created: performance.now(),
 			});
@@ -128,12 +124,14 @@ const animate = (timestamp: number) => {
 
 	embers.forEach((ember) => {
 		// TODO use the time delta for better interpolation
-		ember.mesh.position.x += ember.xVelocity;
-		ember.mesh.position.y += ember.yVelocity;
+		ember.mesh.position.x += ember.velocity.x;
+		ember.mesh.position.y += ember.velocity.y;
+		ember.mesh.position.z += ember.velocity.z;
 		// Embers decay in size
 		ember.mesh.geometry.applyMatrix4(new Matrix4().makeScale(0.99, 0.99, 0.99));
-		ember.xVelocity *= 0.99;
-		ember.yVelocity = ember.yVelocity * 0.99 - 0.005;
+		ember.velocity.x *= 0.99;
+		ember.velocity.z *= 0.99;
+		ember.velocity.y = ember.velocity.y * 0.99 - 0.005;
 	});
 
 	composer.render();
