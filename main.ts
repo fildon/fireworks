@@ -3,8 +3,11 @@ import {
 	Mesh,
 	MeshBasicMaterial,
 	PerspectiveCamera,
+	PlaneGeometry,
+	Raycaster,
 	Scene,
 	TetrahedronGeometry,
+	Vector2,
 	WebGLRenderer,
 } from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -62,7 +65,26 @@ type Ember = {
 };
 let embers: Array<Ember> = [];
 
-window.addEventListener("click", () => {
+const backdropPlane = new Mesh(
+	new PlaneGeometry(1000, 1000),
+	new MeshBasicMaterial({ visible: false })
+);
+scene.add(backdropPlane);
+
+window.addEventListener("click", (event) => {
+	/**
+	 * Detect click target in simulation coordinates, by intersecting with an
+	 * invisible backdrop plane.
+	 */
+	const raycaster = new Raycaster();
+	raycaster.setFromCamera(
+		new Vector2(
+			(event.clientX / window.innerWidth) * 2 - 1,
+			-(event.clientY / window.innerHeight) * 2 + 1
+		),
+		camera
+	);
+	const [{ point: intersection }] = raycaster.intersectObject(backdropPlane);
 	Array.from({ length: 128 })
 		.map(() => ({
 			angle: Math.random() * 2 * Math.PI,
@@ -73,6 +95,8 @@ window.addEventListener("click", () => {
 				new TetrahedronGeometry(),
 				new MeshBasicMaterial({ color: 0xff2222 })
 			);
+			ember.position.x = intersection.x;
+			ember.position.y = intersection.y;
 			embers.push({
 				xVelocity: radius * Math.sin(angle),
 				yVelocity: 0.5 + radius * Math.cos(angle),
