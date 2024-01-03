@@ -96,10 +96,11 @@ const animate = (timestamp: number) => {
 	 */
 
 	// Remove embers after they pass their max age
-	embers
-		.filter((ember) => timestamp - ember.created > MAX_AGE)
-		.forEach((oldEmber) => scene.remove(oldEmber.mesh));
-	embers = embers.filter((ember) => timestamp - ember.created < MAX_AGE);
+	const oldEmbers = embers.filter(
+		(ember) => timestamp - ember.created > MAX_AGE
+	);
+	oldEmbers.forEach((oldEmber) => scene.remove(oldEmber.mesh));
+	embers = embers.filter((ember) => !oldEmbers.includes(ember));
 
 	embers.forEach((ember) => {
 		// TODO use the time delta for better interpolation
