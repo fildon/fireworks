@@ -2,19 +2,16 @@ import {
 	Matrix4,
 	Mesh,
 	MeshBasicMaterial,
+	type Object3DEventMap,
 	PerspectiveCamera,
 	PlaneGeometry,
 	Raycaster,
 	Scene,
-	TetrahedronGeometry,
 	Vector2,
 	Vector3,
 	WebGLRenderer,
+	Color,
 } from "three";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass.js";
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
 /**
  * Maximum age in milliseconds for an ember
@@ -32,12 +29,7 @@ const renderer = new WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new BloomPass(5, 20, 2));
-composer.addPass(new OutputPass());
-
-camera.position.z = 100;
+camera.position.z = 500;
 
 window.addEventListener(
 	"resize",
@@ -59,8 +51,17 @@ window.addEventListener(
 );
 
 type Ember = {
+	/**
+	 * Metres per second
+	 */
 	velocity: Vector3;
-	mesh: Mesh;
+	/**
+	 * Reference to object handled by ThreeJS
+	 */
+	mesh: Mesh<PlaneGeometry, MeshBasicMaterial, Object3DEventMap>;
+	/**
+	 * Millisecond timestamp
+	 */
 	created: number;
 };
 let embers: Array<Ember> = [];
@@ -85,17 +86,20 @@ window.addEventListener("click", (event) => {
 		camera
 	);
 	const [{ point: intersection }] = raycaster.intersectObject(backdropPlane);
-	Array.from({ length: 128 })
-		.map(() => new Vector3().randomDirection().multiplyScalar(Math.random()))
+	Array.from({ length: 256 })
+		.map(() =>
+			new Vector3().randomDirection().multiplyScalar(50 + 50 * Math.random())
+		)
 		.forEach((velocity) => {
 			const ember = new Mesh(
-				new TetrahedronGeometry(),
-				new MeshBasicMaterial({ color: 0xff2222 })
+				new PlaneGeometry(),
+				new MeshBasicMaterial({ color: 0xffffff })
 			);
 			ember.position.x = intersection.x;
 			ember.position.y = intersection.y;
 			embers.push({
-				velocity,
+				// A little extra initial vertical momentum
+				velocity: velocity.add(new Vector3(0, 50, 0)),
 				mesh: ember,
 				created: performance.now(),
 			});
@@ -103,10 +107,13 @@ window.addEventListener("click", (event) => {
 		});
 });
 
+let lastTimestamp = performance.now();
 /**
  * @param timestamp milliseconds since process started
  */
 const animate = (timestamp: number) => {
+	const delta = (timestamp - lastTimestamp) / 1000;
+	lastTimestamp = timestamp;
 	/**
 	 * x is positive to the right
 	 * y is positive up the screen
@@ -123,21 +130,28 @@ const animate = (timestamp: number) => {
 	embers = embers.filter((ember) => !oldEmbers.includes(ember));
 
 	embers.forEach((ember) => {
-		// TODO use the time delta for better interpolation
-		ember.mesh.position.x += ember.velocity.x;
-		ember.mesh.position.y += ember.velocity.y;
-		ember.mesh.position.z += ember.velocity.z;
+		ember.mesh.position.x += ember.velocity.x * delta;
+		ember.mesh.position.y += ember.velocity.y * delta;
+		ember.mesh.position.z += ember.velocity.z * delta;
 		// Embers decay in size
-		ember.mesh.geometry.applyMatrix4(new Matrix4().makeScale(0.99, 0.99, 0.99));
-		ember.velocity.x *= 0.99;
-		ember.velocity.z *= 0.99;
-		ember.velocity.y = ember.velocity.y * 0.99 - 0.005;
+		const scaleFactor = 0.7 ** delta;
+		ember.mesh.geometry.applyMatrix4(
+			new Matrix4().makeScale(scaleFactor, scaleFactor, scaleFactor)
+		);
+
+		const deceleration = 0.4 ** delta;
+		ember.velocity.x *= deceleration;
+		ember.velocity.z *= deceleration;
+		ember.velocity.y *= deceleration;
+
+		// Gravity
+		ember.velocity.y -= 0.5;
+
+		ember.mesh.material.color.lerp(new Color(0xff2222), 0.01);
 	});
 
-	composer.render();
+	renderer.render(scene, camera);
 	requestAnimationFrame(animate);
 };
-
-// TODO colour transitions
 
 animate(performance.now());
