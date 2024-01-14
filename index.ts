@@ -6,11 +6,12 @@ import {
 	Raycaster,
 	Scene,
 	Vector2,
+	type Vector3,
 	WebGLRenderer,
 } from "three";
 
 import { Storage } from "./src/storage";
-import { ExplosiveShell } from "./src/explosiveShell";
+import { Ember } from "./src/ember";
 
 const scene = new Scene();
 const renderer = new WebGLRenderer();
@@ -74,7 +75,10 @@ window.addEventListener<"click">(
 				return;
 			}
 			const { point: intersection } = firstIntersection;
-			storage.add(new ExplosiveShell(intersection));
+			Array.from<Vector3>({ length: 64 })
+				.fill(intersection)
+				.map((origin) => new Ember(origin))
+				.forEach((ember) => storage.add(ember));
 		};
 	})()
 );
