@@ -14,26 +14,29 @@ export class Ember implements Storable {
 	/**
 	 * Milliseconds between creation and expiry
 	 */
-	private static MAX_AGE = 10000;
-	private velocity: Vector3;
+	private static MAX_AGE = 3000;
 	private mesh: Mesh<PlaneGeometry, MeshBasicMaterial, Object3DEventMap>;
+	private velocity: Vector3;
 	private wobbleOffset: number;
 	private lastUpdateTime: number;
 	private created: number;
-	constructor(origin: Vector3) {
+	constructor({
+		position,
+		velocity,
+	}: {
+		position: Vector3;
+		velocity: Vector3;
+	}) {
 		this.created = performance.now();
 		this.lastUpdateTime = this.created;
-		this.velocity = new Vector3()
-			.randomDirection()
-			.multiplyScalar(50 + 50 * Math.random())
-			// A little extra initial vertical momentum
-			.add(new Vector3(0, 50, 0));
 		this.mesh = new Mesh(
 			new PlaneGeometry(1, 1),
 			new MeshBasicMaterial({ color: 0xffffff })
 		);
-		this.mesh.position.x = origin.x;
-		this.mesh.position.y = origin.y;
+		this.mesh.position.x = position.x;
+		this.mesh.position.y = position.y;
+		this.mesh.position.z = position.z;
+		this.velocity = velocity;
 		this.wobbleOffset = Math.random() * 10000;
 	}
 	getMeshes() {
@@ -70,6 +73,7 @@ export class Ember implements Storable {
 		this.velocity.y -= 0.5;
 
 		this.mesh.material.color.lerp(new Color(0xff2222), 0.01);
+		return { storablesToAdd: [] };
 	}
 	isExpired(time: number) {
 		return time - this.created > Ember.MAX_AGE;

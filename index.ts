@@ -6,12 +6,13 @@ import {
 	Raycaster,
 	Scene,
 	Vector2,
-	type Vector3,
+	Vector3,
 	WebGLRenderer,
 } from "three";
 
 import { Storage } from "./src/storage";
 import { Ember } from "./src/ember";
+import { Trailer } from "./src/trailer";
 
 const scene = new Scene();
 const renderer = new WebGLRenderer();
@@ -75,10 +76,24 @@ window.addEventListener<"click">(
 				return;
 			}
 			const { point: intersection } = firstIntersection;
-			Array.from<Vector3>({ length: 64 })
+			Array.from<Vector3>({ length: 8 })
 				.fill(intersection)
-				.map((origin) => new Ember(origin))
-				.forEach((ember) => storage.add(ember));
+				.map((position) => new Trailer({ position }))
+				.forEach((trailer) => storage.add(trailer));
+			Array.from<Vector3>({ length: 32 })
+				.fill(intersection)
+				.map(
+					(position) =>
+						new Ember({
+							position,
+							velocity: new Vector3()
+								.randomDirection()
+								.multiplyScalar(50 + 50 * Math.random())
+								// A little extra initial vertical momentum
+								.add(new Vector3(0, 50, 0)),
+						})
+				)
+				.forEach((trailer) => storage.add(trailer));
 		};
 	})()
 );

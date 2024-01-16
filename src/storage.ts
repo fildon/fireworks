@@ -5,9 +5,9 @@ export interface Storable {
 	/**
 	 * @param time - milliseconds since process start
 	 */
-	update: (time: number) => void;
+	update: (time: number) => { storablesToAdd: Array<Storable> };
 	/**
-	 * Indicates that this item and all associated meshes should be fully removed.
+	 * Indicates that this item and all associated meshes should be removed.
 	 */
 	isExpired: (time: number) => boolean;
 }
@@ -29,7 +29,10 @@ export class Storage {
 			.forEach((mesh) => this.scene.remove(mesh));
 		this.items = this.items.filter((item) => !expiredItems.includes(item));
 
-		// Update remaining items
-		this.items.forEach((storable) => storable.update(time));
+		this.items
+			// Update each item
+			.flatMap((item) => item.update(time).storablesToAdd)
+			// Add new items
+			.forEach((newItem) => this.add(newItem));
 	}
 }
